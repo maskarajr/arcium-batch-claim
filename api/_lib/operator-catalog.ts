@@ -1,6 +1,3 @@
-import { getPrimaryStakeAccAddress } from "@arcium-hq/staking";
-import { PublicKey } from "@solana/web3.js";
-
 const INDEXER_ORIGIN = "https://stake.arcium.com";
 
 const CHUNK_RE = /\/_next\/static\/chunks\/1-[^"'\\s]+\.js/;
@@ -10,7 +7,6 @@ const NAME_OWNER_RE =
 export type OperatorCatalogEntry = {
   name: string;
   owner: string;
-  primary: string;
 };
 
 export type OperatorCatalogOk = { ok: true; operators: OperatorCatalogEntry[] };
@@ -52,14 +48,12 @@ export async function scrapeOperatorCatalog(): Promise<OperatorCatalogResult> {
     }
     const js = await jsRes.text();
     const operators: OperatorCatalogEntry[] = [];
+    const seen = new Set<string>();
     for (const m of js.matchAll(NAME_OWNER_RE)) {
-      try {
-        const owner = new PublicKey(m[2]);
-        const primary = getPrimaryStakeAccAddress(owner).toBase58();
-        operators.push({ name: m[1], owner: owner.toBase58(), primary });
-      } catch {
-        /* skip bad pubkey */
-      }
+      const owner = m[2];
+      if (seen.has(owner)) continue;
+      seen.add(owner);
+      operators.push({ name: m[1], owner });
     }
     return { ok: true, operators };
   } catch (err) {

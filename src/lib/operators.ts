@@ -1,10 +1,11 @@
+import { getPrimaryStakeAccAddress } from "@arcium-hq/staking";
 import { PublicKey } from "@solana/web3.js";
 
 export type OperatorInfo = { name: string; owner: PublicKey };
 
 let cached: Promise<Map<string, OperatorInfo>> | null = null;
 
-type OperatorJson = { name: string; owner: string; primary: string };
+type OperatorJson = { name: string; owner: string };
 
 export function loadOperatorCatalog(): Promise<Map<string, OperatorInfo>> {
   cached ??= fetchCatalog();
@@ -20,7 +21,8 @@ async function fetchCatalog(): Promise<Map<string, OperatorInfo>> {
   for (const row of rows) {
     try {
       const owner = new PublicKey(row.owner);
-      map.set(row.primary, { name: row.name, owner });
+      const primary = getPrimaryStakeAccAddress(owner).toBase58();
+      map.set(primary, { name: row.name, owner });
     } catch {
       /* skip bad pubkey */
     }
@@ -39,9 +41,7 @@ function isOperatorJson(row: unknown): row is OperatorJson {
   if (!row || typeof row !== "object") return false;
   const rec = row as Record<string, unknown>;
   return (
-    typeof rec.name === "string" &&
-    typeof rec.owner === "string" &&
-    typeof rec.primary === "string"
+    typeof rec.name === "string" && typeof rec.owner === "string"
   );
 }
 

@@ -7,8 +7,18 @@ import { scrapeOperatorCatalog } from "./api/_lib/operator-catalog";
 const INDEXER_ORIGIN = "https://stake.arcium.com";
 const PUBLIC_RPC = "https://api.mainnet-beta.solana.com";
 
+function rpcTarget(rpcUrl: string): URL {
+  try {
+    const parsed = new URL(rpcUrl);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed;
+  } catch {
+    /* vercel pull writes [SENSITIVE] when secrets cannot be downloaded */
+  }
+  return new URL(PUBLIC_RPC);
+}
+
 function rpcProxy(rpcUrl: string): Record<string, ProxyOptions> {
-  const parsed = new URL(rpcUrl);
+  const parsed = rpcTarget(rpcUrl);
   const path = `${parsed.pathname}${parsed.search}` || "/";
   return {
     "/rpc": {
