@@ -15,6 +15,7 @@ import { groupRowsByStakeAccOrder, sendClaimBatches } from "./lib/claim";
 import { canUndelegate, canWithdraw, exitStatusLabel, positionExitKind } from "./lib/exit";
 import { sendUndelegate, sendWithdraw, type ExitAction, type ExitProgress } from "./lib/exitTx";
 import { INITIAL_BATCH_SIZE } from "./lib/constants";
+import { isUnnamedOperator, operatorCardLabel } from "./lib/operatorLabel";
 import { lookupClaimable, refreshPositionExit } from "./lib/positions";
 import { clearCachedProofs } from "./lib/proofCache";
 import type { ClaimableRow, LookupProgress, PositionShell } from "./lib/types";
@@ -182,6 +183,45 @@ function ProofTable({
   );
 }
 
+function OperatorHeading({
+  name,
+  primary,
+}: {
+  name: string;
+  primary: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const unnamed = isUnnamedOperator(name) && primary.length > 0;
+  const label = operatorCardLabel(name, primary);
+  const canCopy = primary.length > 0;
+
+  const onCopy = () => {
+    void navigator.clipboard.writeText(primary).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    });
+  };
+
+  return (
+    <div className="pos-title-row">
+      <div className={unnamed ? "pos-title pos-title--pk" : "pos-title"} title={unnamed ? primary : undefined}>
+        {label}
+      </div>
+      {canCopy ? (
+        <button
+          type="button"
+          className="pos-pk-copy"
+          title={primary}
+          onClick={onCopy}
+          aria-label={copied ? "Copied primary address" : "Copy primary address"}
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function PositionBlock({
   p,
   busy,
@@ -225,13 +265,13 @@ function PositionBlock({
   const statusText = exitStatusLabel(kind, p.shell.deactivationEpoch);
   return (
     <section className="pos-block">
-      <div className="pos-row" title={p.acc}>
+      <div className="pos-row">
         <div className="pos-copy">
           <div className="stat-label">Position</div>
-          <div className="pos-title">{p.operator}</div>
+          <OperatorHeading name={p.operator} primary={p.shell.primaryStake} />
           <div className="stat-value sm">{formatArx(p.stake)} ARX</div>
           <div className="stat-hint">{p.epochs} epochs · {lamportsToSol(p.sol)} SOL</div>
-          <div className="stat-hint mono">{shortPk(p.acc)}</div>
+          <div className="stat-hint mono" title={p.acc}>{shortPk(p.acc)}</div>
           <div className={kind === "ready" ? "pos-status ready" : "pos-status"}>{statusText}</div>
         </div>
         <div className="pos-actions">

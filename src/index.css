@@ -423,6 +423,32 @@ button.exit:hover:not(:disabled) {
 .stat-value.sm { font-size: 17px; }
 .stat-hint { color: var(--muted); font-size: 12px; }
 .pos-title { font-weight: 600; font-size: 16px; }
+.pos-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pos-title--pk {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.pos-pk-copy {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.pos-pk-copy:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 4%, var(--panel));
+}
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
 
 .pos-list {
