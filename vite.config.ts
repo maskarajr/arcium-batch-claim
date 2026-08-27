@@ -1,6 +1,8 @@
 import react from "@vitejs/plugin-react";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig, loadEnv, type ProxyOptions } from "vite";
+import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from "vite";
+import { scrapeOperatorCatalog } from "./api/_lib/operator-catalog";
 
 const INDEXER_ORIGIN = "https://stake.arcium.com";
 const PUBLIC_RPC = "https://api.mainnet-beta.solana.com";
@@ -55,13 +57,58 @@ function indexerProxy(): Record<string, ProxyOptions> {
   };
 }
 
+function isOperatorsRequest(req: IncomingMessage): boolean {
+  if (req.method !== "GET") return false;
+  const path = (req.url ?? "").split("?")[0];
+  return path === "/api/operators" || path === "/api/operators/";
+}
+
+function operatorsApiPlugin(): Plugin {
+  const middleware = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    next: () => void,
+  ) => {
+    if (!isOperatorsRequest(req)) {
+      next();
+      return;
+    }
+    void (async () => {
+      const result = await scrapeOperatorCatalog();
+      if (!result.ok) {
+        res.statusCode = result.status;
+        res.setHeader("content-type", "text/plain");
+        res.end(result.message);
+        return;
+      }
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ operators: result.operators }));
+    })().catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.statusCode = 502;
+      res.setHeader("content-type", "text/plain");
+      res.end(msg);
+    });
+  };
+  return {
+    name: "operators-api",
+    configureServer(server) {
+      server.middlewares.use(middleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(middleware);
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const rpcUrl = env.RPC_URL || env.VITE_RPC_URL || PUBLIC_RPC;
   const proxy = { ...indexerProxy(), ...siteProxy(), ...rpcProxy(rpcUrl) };
 
   return {
-    plugins: [react()],
+    plugins: [react(), operatorsApiPlugin()],
     define: {
       "process.env": {},
     },
