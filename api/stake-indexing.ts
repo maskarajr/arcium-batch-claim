@@ -1,4 +1,4 @@
-import { proxyToArcium } from "../server/arcium-proxy.js";
+import { proxyToArcium } from "./_lib/arcium-proxy.js";
 
 export const config = {
   runtime: "nodejs",

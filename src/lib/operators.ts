@@ -15,12 +15,12 @@ export function loadOperatorCatalog(): Promise<Map<string, OperatorInfo>> {
 
 async function fetchCatalog(): Promise<Map<string, OperatorInfo>> {
   const map = new Map<string, OperatorInfo>();
-  const htmlRes = await fetch("/stake-site/");
+  const htmlRes = await fetch("/api/stake-site/");
   if (!htmlRes.ok) return map;
   const html = await htmlRes.text();
   const chunk = html.match(/\/_next\/static\/chunks\/1-[^"'\\s]+\.js/);
   if (!chunk) return map;
-  const jsRes = await fetch(`/stake-site${chunk[0].split("?")[0]}`);
+  const jsRes = await fetch(`/api/stake-site${chunk[0].split("?")[0]}`);
   if (!jsRes.ok) return map;
   const js = await jsRes.text();
   for (const m of js.matchAll(NAME_OWNER_RE)) {

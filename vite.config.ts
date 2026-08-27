@@ -18,17 +18,24 @@ function rpcProxy(rpcUrl: string): Record<string, ProxyOptions> {
 }
 
 function siteProxy(): Record<string, ProxyOptions> {
+  const configure: NonNullable<ProxyOptions["configure"]> = (proxy) => {
+    proxy.on("proxyReq", (proxyReq) => {
+      proxyReq.setHeader("origin", INDEXER_ORIGIN);
+      proxyReq.setHeader("referer", `${INDEXER_ORIGIN}/`);
+    });
+  };
   return {
+    "/api/stake-site": {
+      target: INDEXER_ORIGIN,
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/api\/stake-site/, "") || "/",
+      configure,
+    },
     "/stake-site": {
       target: INDEXER_ORIGIN,
       changeOrigin: true,
       rewrite: (path) => path.replace(/^\/stake-site/, "") || "/",
-      configure: (proxy) => {
-        proxy.on("proxyReq", (proxyReq) => {
-          proxyReq.setHeader("origin", INDEXER_ORIGIN);
-          proxyReq.setHeader("referer", `${INDEXER_ORIGIN}/`);
-        });
-      },
+      configure,
     },
   };
 }

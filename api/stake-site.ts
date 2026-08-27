@@ -1,4 +1,4 @@
-import { pathAfterPrefix, proxyToArcium } from "../server/arcium-proxy.js";
+import { proxyToArcium, stripStakeSitePath } from "./_lib/arcium-proxy.js";
 
 export const config = {
   runtime: "nodejs",
@@ -7,7 +7,7 @@ export const config = {
 
 async function handle(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const upstream = pathAfterPrefix(url.pathname, "/api/stake-site");
+  const upstream = stripStakeSitePath(url.pathname);
   return proxyToArcium(request, `${upstream}${url.search}`);
 }
 
