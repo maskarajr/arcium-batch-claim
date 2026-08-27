@@ -1,4 +1,4 @@
-import { pathAfterPrefix, proxyToArcium } from "../../server/arcium-proxy";
+import { pathAfterPrefix, proxyToArcium } from "../../server/arcium-proxy.js";
 
 export const config = {
   runtime: "nodejs",
