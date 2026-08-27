@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/rpc", "destination": "/api/rpc" },
+    { "source": "/stake-site", "destination": "/api/stake-site" },
+    { "source": "/stake-site/:path*", "destination": "/api/stake-site/:path*" }
+  ]
+}

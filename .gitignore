@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+*.map
+*.local
+.DS_Store
+.cursor/
+
+# Solana CLI keypair files (never commit)
+3Bb76gLkoGvkF6Gcv1fWLkcbfmzvGAZC1T3e6f8LABcE9w21QPhptJHGQvuxFCrenw7UHKYqiq6C5iP9rPmStKww.json
+Hjs3UDno8UKv8ibGSbZdsNC8zqrT6HPiHPbv9BDtdjWrGieJMkUTQ4vphsD3KEwV3x1qtAyDL5Y3BD4SZh6Kb3k.json
