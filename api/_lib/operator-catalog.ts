@@ -67,3 +67,23 @@ export async function scrapeOperatorCatalog(): Promise<OperatorCatalogResult> {
     return { ok: false, status: 502, message: msg };
   }
 }
+
+export async function operatorCatalogResponse(): Promise<Response> {
+  const result = await scrapeOperatorCatalog();
+  switch (result.ok) {
+    case false:
+      return new Response(result.message, {
+        status: result.status,
+        headers: { "content-type": "text/plain" },
+      });
+    case true:
+      return new Response(JSON.stringify({ operators: result.operators }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    default: {
+      const _never: never = result;
+      return _never;
+    }
+  }
+}

@@ -75,15 +75,22 @@ function operatorsApiPlugin(): Plugin {
     }
     void (async () => {
       const result = await scrapeOperatorCatalog();
-      if (!result.ok) {
-        res.statusCode = result.status;
-        res.setHeader("content-type", "text/plain");
-        res.end(result.message);
-        return;
+      switch (result.ok) {
+        case false:
+          res.statusCode = result.status;
+          res.setHeader("content-type", "text/plain");
+          res.end(result.message);
+          return;
+        case true:
+          res.statusCode = 200;
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify({ operators: result.operators }));
+          return;
+        default: {
+          const _never: never = result;
+          return _never;
+        }
       }
-      res.statusCode = 200;
-      res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ operators: result.operators }));
     })().catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err);
       res.statusCode = 502;
