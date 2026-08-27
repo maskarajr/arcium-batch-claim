@@ -1,5 +1,5 @@
-import { isUnnamedOperator } from "./operatorLabel";
 import rawNames from "../data/operator-names.json";
+import { isUnnamedOperator } from "./operatorLabel";
 
 export type OperatorNameMap = Record<string, string>;
 

@@ -1,6 +1,5 @@
 import { getPrimaryStakeAccAddress } from "@arcium-hq/staking";
 import { PublicKey } from "@solana/web3.js";
-import { isUnnamedOperator } from "./operatorLabel";
 import { lookupOperatorName, operatorNameDump } from "./operatorNames";
 
 export type OperatorInfo = { name: string; owner: PublicKey };
@@ -8,7 +7,6 @@ export type OperatorInfo = { name: string; owner: PublicKey };
 let cached: Promise<Map<string, OperatorInfo>> | null = null;
 
 type OperatorJson = {
-  name: string;
   owner: string;
   primary?: string;
   boundNode?: string;
@@ -29,7 +27,12 @@ async function fetchCatalog(): Promise<Map<string, OperatorInfo>> {
     try {
       const owner = new PublicKey(row.owner);
       const primary = catalogMapKey(row, owner);
-      map.set(primary, { name: catalogDisplayName(row), owner });
+      map.set(primary, {
+        name:
+          lookupOperatorName(operatorNameDump, row.boundNode, row.owner) ??
+          "unknown",
+        owner,
+      });
     } catch {
       /* skip bad pubkey */
     }
@@ -48,13 +51,6 @@ function catalogMapKey(row: OperatorJson, owner: PublicKey): string {
   return getPrimaryStakeAccAddress(owner).toBase58();
 }
 
-function catalogDisplayName(row: OperatorJson): string {
-  if (!isUnnamedOperator(row.name)) return row.name;
-  return (
-    lookupOperatorName(operatorNameDump, row.boundNode, row.owner) ?? row.name
-  );
-}
-
 function catalogRows(body: unknown): OperatorJson[] {
   if (!body || typeof body !== "object" || !("operators" in body)) return [];
   const operators = (body as { operators: unknown }).operators;
@@ -65,9 +61,7 @@ function catalogRows(body: unknown): OperatorJson[] {
 function isOperatorJson(row: unknown): row is OperatorJson {
   if (!row || typeof row !== "object") return false;
   const rec = row as Record<string, unknown>;
-  if (typeof rec.name !== "string" || typeof rec.owner !== "string") {
-    return false;
-  }
+  if (typeof rec.owner !== "string") return false;
   if (rec.primary !== undefined && typeof rec.primary !== "string") {
     return false;
   }

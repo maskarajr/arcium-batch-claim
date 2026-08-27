@@ -1,9 +1,3 @@
-import {
-  mergeOperatorCatalog,
-  type OperatorCatalogResult,
-} from "../../src/lib/operatorCatalogMerge";
-import { operatorNameDump } from "../../src/lib/operatorNames";
-
 const EXPLORER_NODES_URL =
   "https://explorer.arcium.com/api/v1/nodes?network=mainnet&limit=100";
 
@@ -13,17 +7,46 @@ function isPlausibleBase58(value: string): boolean {
   return BASE58_RE.test(value);
 }
 
-type ExplorerRow = {
+export type ExplorerCensusRow = {
   owner: string;
   primary?: string;
   boundNode?: string;
 };
 
-function parseExplorerNodes(body: unknown): ExplorerRow[] {
+export type OperatorCatalogOk = { ok: true; operators: ExplorerCensusRow[] };
+export type OperatorCatalogErr = { ok: false; status: 502; message: string };
+export type OperatorCatalogResult = OperatorCatalogOk | OperatorCatalogErr;
+
+export function censusToCatalogResult(
+  explorer: ExplorerCensusRow[] | null,
+): OperatorCatalogResult {
+  const byOwner = new Map<string, ExplorerCensusRow>();
+  for (const node of explorer ?? []) {
+    byOwner.set(node.owner, {
+      owner: node.owner,
+      ...(node.primary ? { primary: node.primary } : {}),
+      ...(node.boundNode ? { boundNode: node.boundNode } : {}),
+    });
+  }
+  const operators = [...byOwner.values()];
+  if (operators.length === 0) {
+    return {
+      ok: false,
+      status: 502,
+      message:
+        explorer === null
+          ? "explorer nodes failed"
+          : "no active clusterMembership nodes",
+    };
+  }
+  return { ok: true, operators };
+}
+
+function parseExplorerNodes(body: unknown): ExplorerCensusRow[] {
   if (!body || typeof body !== "object" || !("data" in body)) return [];
   const data = (body as { data: unknown }).data;
   if (!Array.isArray(data)) return [];
-  const out: ExplorerRow[] = [];
+  const out: ExplorerCensusRow[] = [];
   const seen = new Set<string>();
   for (const row of data) {
     if (!row || typeof row !== "object") continue;
@@ -33,7 +56,7 @@ function parseExplorerNodes(body: unknown): ExplorerRow[] {
     if (rec.clusterMembership !== "active") continue;
     if (seen.has(rec.authorityKey)) continue;
     seen.add(rec.authorityKey);
-    const parsed: ExplorerRow = { owner: rec.authorityKey };
+    const parsed: ExplorerCensusRow = { owner: rec.authorityKey };
     if (
       typeof rec.primaryStakingAccount === "string" &&
       isPlausibleBase58(rec.primaryStakingAccount)
@@ -48,7 +71,7 @@ function parseExplorerNodes(body: unknown): ExplorerRow[] {
   return out;
 }
 
-async function fetchExplorerCensus(): Promise<ExplorerRow[] | null> {
+async function fetchExplorerCensus(): Promise<ExplorerCensusRow[] | null> {
   try {
     const res = await fetch(EXPLORER_NODES_URL);
     if (!res.ok) return null;
@@ -61,25 +84,19 @@ async function fetchExplorerCensus(): Promise<ExplorerRow[] | null> {
 
 export async function loadOperatorCatalog(): Promise<OperatorCatalogResult> {
   const explorer = await fetchExplorerCensus();
-  return mergeOperatorCatalog(explorer, operatorNameDump);
+  return censusToCatalogResult(explorer);
 }
 
 export async function operatorCatalogResponse(): Promise<Response> {
   const result = await loadOperatorCatalog();
-  switch (result.ok) {
-    case false:
-      return new Response(result.message, {
-        status: result.status,
-        headers: { "content-type": "text/plain" },
-      });
-    case true:
-      return new Response(JSON.stringify({ operators: result.operators }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
-    default: {
-      const _never: never = result;
-      return _never;
-    }
+  if (result.ok === false) {
+    return new Response(result.message, {
+      status: result.status,
+      headers: { "content-type": "text/plain" },
+    });
   }
+  return new Response(JSON.stringify({ operators: result.operators }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
 }
