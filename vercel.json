@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/rpc", "destination": "/api/rpc" },
     { "source": "/stake-site", "destination": "/api/stake-site" },
+    { "source": "/stake-site/", "destination": "/api/stake-site" },
     { "source": "/stake-site/:path*", "destination": "/api/stake-site/:path*" }
   ]
 }
