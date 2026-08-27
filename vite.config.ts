@@ -2,7 +2,7 @@ import react from "@vitejs/plugin-react";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from "vite";
-import { scrapeOperatorCatalog } from "./api/_lib/operator-catalog";
+import { operatorCatalogResponse } from "./api/_lib/operator-catalog";
 
 const INDEXER_ORIGIN = "https://stake.arcium.com";
 const PUBLIC_RPC = "https://api.mainnet-beta.solana.com";
@@ -84,23 +84,14 @@ function operatorsApiPlugin(): Plugin {
       return;
     }
     void (async () => {
-      const result = await scrapeOperatorCatalog();
-      switch (result.ok) {
-        case false:
-          res.statusCode = result.status;
-          res.setHeader("content-type", "text/plain");
-          res.end(result.message);
-          return;
-        case true:
-          res.statusCode = 200;
-          res.setHeader("content-type", "application/json");
-          res.end(JSON.stringify({ operators: result.operators }));
-          return;
-        default: {
-          const _never: never = result;
-          return _never;
-        }
-      }
+      const response = await operatorCatalogResponse();
+      const body = await response.text();
+      res.statusCode = response.status;
+      res.setHeader(
+        "content-type",
+        response.headers.get("content-type") ?? "text/plain",
+      );
+      res.end(body);
     })().catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err);
       res.statusCode = 502;

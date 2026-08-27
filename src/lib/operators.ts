@@ -5,7 +5,7 @@ export type OperatorInfo = { name: string; owner: PublicKey };
 
 let cached: Promise<Map<string, OperatorInfo>> | null = null;
 
-type OperatorJson = { name: string; owner: string };
+type OperatorJson = { name: string; owner: string; primary?: string };
 
 export function loadOperatorCatalog(): Promise<Map<string, OperatorInfo>> {
   cached ??= fetchCatalog();
@@ -21,13 +21,24 @@ async function fetchCatalog(): Promise<Map<string, OperatorInfo>> {
   for (const row of rows) {
     try {
       const owner = new PublicKey(row.owner);
-      const primary = getPrimaryStakeAccAddress(owner).toBase58();
+      const primary = catalogMapKey(row, owner);
       map.set(primary, { name: row.name, owner });
     } catch {
       /* skip bad pubkey */
     }
   }
   return map;
+}
+
+function catalogMapKey(row: OperatorJson, owner: PublicKey): string {
+  if (row.primary) {
+    try {
+      return new PublicKey(row.primary).toBase58();
+    } catch {
+      /* derive from owner */
+    }
+  }
+  return getPrimaryStakeAccAddress(owner).toBase58();
 }
 
 function catalogRows(body: unknown): OperatorJson[] {
@@ -40,9 +51,13 @@ function catalogRows(body: unknown): OperatorJson[] {
 function isOperatorJson(row: unknown): row is OperatorJson {
   if (!row || typeof row !== "object") return false;
   const rec = row as Record<string, unknown>;
-  return (
-    typeof rec.name === "string" && typeof rec.owner === "string"
-  );
+  if (typeof rec.name !== "string" || typeof rec.owner !== "string") {
+    return false;
+  }
+  if (rec.primary !== undefined && typeof rec.primary !== "string") {
+    return false;
+  }
+  return true;
 }
 
 export async function operatorForPrimary(
