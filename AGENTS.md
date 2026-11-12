@@ -15,7 +15,7 @@
 
 ## Learned Workspace Facts
 
-- Product is the Vite app. Dev: `npm run dev` (5173, Vite proxies). Public: Vercel (`dist` + `/api` functions). `npm start` is local preview on 4173 with the same Vite proxies. Function-accurate local: `vercel login` then `vercel dev`. `arcium_batch_claim.ts` is a deprecated Node stub.
+- Product is the Vite app. Dev: `npm run dev` (5173, Vite proxies). Public: Vercel (`dist` + `/api` functions). `npm start` is local preview on 4173 with the same Vite proxies. Function-accurate local: `vercel login` then `vercel dev`. No CLI / private-key claim path.
 - Each `claim_delegated_stake_rewards` ix needs an epoch-specific Merkle opening and `stakeOffset` from Arcium’s rewards indexer; packing ixs from IDL alone is not enough.
 - Vite (dev) and Vercel functions proxy `/api/stake-indexing` to `https://stake.arcium.com` with that origin/referer; unproxied indexer calls return 403 forbidden origin.
 - Browser RPC must be an absolute `http(s):` URL to `/rpc` (web3.js rejects `/rpc`). Vercel rewrites `/rpc` → `/api/rpc` using `RPC_URL`. Public `api.mainnet-beta.solana.com` often 403s `getAccountInfo`.
